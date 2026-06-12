@@ -1,8 +1,17 @@
-import Anthropic from '@anthropic-ai/sdk';
+import 'dotenv/config';
+import axios from 'axios';
 import { readState, updateState } from './state.js';
 import { bigBlindFromBlinds, stackToBlinds, pushFoldZone, boardTexture } from './poker.js';
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+
+function anthropicHeaders() {
+  return {
+    'x-api-key': process.env.ANTHROPIC_API_KEY,
+    'anthropic-version': '2023-06-01',
+    'content-type': 'application/json',
+  };
+}
 
 // Static poker rules — cached across calls (doesn't change between hands)
 const RULES_PROMPT = `You are Poker Brain — a real-time poker advisor over iMessage. The user is mid-game and needs fast, sharp advice.
@@ -72,14 +81,20 @@ export async function getPokerAdvice(userMessage) {
   const history = h.messages || [];
   const messages = [...history, { role: 'user', content: userMessage }];
 
-  const response = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 200,
-    system: [{ type: 'text', text: systemText, cache_control: { type: 'ephemeral' } }],
-    messages,
-  });
+  let response;
+  try {
+    response = await axios.post(
+      ANTHROPIC_URL,
+      { model: 'claude-sonnet-4-6', max_tokens: 200, system: systemText, messages },
+      { headers: anthropicHeaders() }
+    );
+  } catch (err) {
+    console.error('[claude] status:', err.response?.status);
+    console.error('[claude] data:', JSON.stringify(err.response?.data));
+    throw err;
+  }
 
-  const assistantReply = response.content[0].text.trim();
+  const assistantReply = response.data.content[0].text.trim();
 
   // Persist the updated conversation history
   const updatedMessages = [
