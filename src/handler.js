@@ -41,6 +41,7 @@ setup / new game — configure game
 new hand         — clear hand state
 reset            — clear everything
 stack            — show stack + blinds
+stack 1500       — update chip count
 pot odds X to call Y
 equity           — estimate your equity
 help             — this guide`;
@@ -83,6 +84,18 @@ export async function handleMessage(content) {
       const bb = bigBlindFromBlinds(g.blinds);
       const bbs = bb && g.stack ? stackToBlinds(g.stack, bb) : '?';
       return `Stack: ${g.stack} chips\nBlinds: ${g.blinds}\n${bbs} BBs | ${g.gameType}`;
+    }
+
+    case 'stack_update': {
+      const g = state.game;
+      if (!g) return 'No game set up. Text "setup" first.';
+      const m = msg.match(/(\d+)/);
+      if (!m) return 'Format: stack 1500 or update stack 1500';
+      const newStack = parseInt(m[1]);
+      updateState({ game: { ...g, stack: newStack } });
+      const bb = bigBlindFromBlinds(g.blinds);
+      const bbs = bb ? stackToBlinds(newStack, bb) : '?';
+      return `Stack updated: ${newStack} chips (${bbs} BBs)`;
     }
 
     case 'pot_odds': {

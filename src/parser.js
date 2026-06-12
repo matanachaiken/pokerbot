@@ -78,6 +78,7 @@ export function detectIntent(msg) {
   if (/^new\s+hand$/i.test(lower)) return 'new_hand';
   if (/^help$/i.test(lower)) return 'help';
   if (/^stack$/i.test(lower)) return 'stack';
+  if (/^(?:update\s+)?stack\s+\d+/i.test(lower)) return 'stack_update';
   if (/^pot\s+odds/i.test(lower)) return 'pot_odds';
   if (/^equity$/i.test(lower)) return 'equity';
 
